@@ -1,0 +1,31 @@
+import pefile
+import numpy as np
+from sklearn.cluster import KMeans
+from collections import Counter
+import sys
+
+def detect_malware(file_path):
+    # Load the PE file
+    pe = pefile.PE(file_path)
+
+    # Extract the imported APIs
+    imported_apis = [entry.name.decode() for entry in pe.DIRECTORY_ENTRY_IMPORT]
+
+    # Perform clustering on the imported APIs to detect anomalies
+    kmeans = KMeans(n_clusters=2)
+    api_array = np.array(imported_apis).reshape(-1, 1)
+    kmeans.fit(api_array)
+    labels = kmeans.labels_
+
+    # Check if the number of unique labels is greater than 1
+    # If yes, then the PE file has imported APIs that are different from typical benign files
+    if len(set(labels)) > 1:
+        print('Anomalous behavior detected')
+        print('Unique APIs:', Counter(imported_apis))
+    else:
+        print('No anomalous behavior detected')
+
+if __name__ == '__main__':
+    # Get the file path from the command line argument
+    file_path = sys.argv[1]
+    detect_malware(file_path)
